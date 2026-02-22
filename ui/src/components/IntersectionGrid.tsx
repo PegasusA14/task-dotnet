@@ -1,4 +1,4 @@
-import { useTrafficLight } from "@/hooks/useTrafficLight";
+import { useTrafficLight, type TrafficPhase } from "@/hooks/useTrafficLight";
 import { TrafficLightPod } from "./TrafficLightPod";
 
 /* ── Direction Offsets (staggered start in the 19s cycle) ────── */
@@ -175,7 +175,13 @@ const POD_POSITION: Record<
 };
 
 /* ── Pavement Lane Arrow ──────────────────────────────────────── */
-function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
+function LaneArrow({
+    direction,
+    phase,
+}: {
+    direction: "N" | "S" | "E" | "W";
+    phase: TrafficPhase;
+}) {
     let incomingPos = "";
     let incomingRot = "";
     let outgoingPos = "";
@@ -209,10 +215,18 @@ function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
             break;
     }
 
-    const ArrowSVG = ({ pos, rot }: { pos: string; rot: string }) => (
+    const isGreen = phase === "green";
+
+    const ArrowSVG = ({ pos, rot, animate }: { pos: string; rot: string; animate: boolean }) => (
         <div
-            className={`absolute ${pos} ${rot} pointer-events-none opacity-40 z-10`}
-            style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
+            className={`absolute ${pos} ${rot} pointer-events-none z-10 
+                       ${animate ? "animate-pulse opacity-80" : "opacity-40"}`}
+            style={{
+                filter: animate
+                    ? "drop-shadow(0 2px 8px rgba(255,255,255,0.8))"
+                    : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+                transition: "opacity 0.3s ease, filter 0.3s ease"
+            }}
         >
             <svg
                 width="28"
@@ -229,8 +243,9 @@ function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
 
     return (
         <>
-            <ArrowSVG pos={incomingPos} rot={incomingRot} />
-            <ArrowSVG pos={outgoingPos} rot={outgoingRot} />
+            {/* Outgoing lane gets the green pulse animation since it's the one moving */}
+            <ArrowSVG pos={incomingPos} rot={incomingRot} animate={false} />
+            <ArrowSVG pos={outgoingPos} rot={outgoingRot} animate={isGreen} />
         </>
     );
 }
@@ -286,7 +301,7 @@ function RoadCell({
                 style={{ backgroundImage: ambientGradient }}
             />
 
-            <LaneArrow direction={direction} />
+            <LaneArrow direction={direction} phase={phase} />
 
             {/* Traffic light pod at the edge of the stopline */}
             <div style={pos.style} className="z-20 relative">

@@ -66,13 +66,13 @@ builder.Services.AddHostedService<IntersectionBackgroundService>();
 var app = builder.Build();
 
 // 10. Middleware pipeline
-app.UseCors("ReactDevClient");
-
 app.UseRouting();
+
+app.UseCors("ReactDevClient");
 
 app.MapControllers();
 
-app.MapHub<TrafficHub>("/hubs/traffic");
+app.MapHub<TrafficHub>("/hubs/traffic").RequireCors("ReactDevClient");
 
 // 11. Run the app
 app.Run();
