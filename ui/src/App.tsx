@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { IntersectionGrid } from "@/components/IntersectionGrid";
+import { useIntersection, TrafficContext } from "@/hooks/useIntersection";
+import { ConnectionStatusBadge } from "@/components/ConnectionStatusBadge";
 
 function App() {
+  const intersectionData = useIntersection();
+
   // Initialize dark mode on mount
   useEffect(() => {
     const stored = localStorage.getItem("theme");
@@ -15,10 +19,13 @@ function App() {
   }, []);
 
   return (
-    <div className="w-screen h-screen overflow-hidden relative">
-      <ThemeToggle />
-      <IntersectionGrid />
-    </div>
+    <TrafficContext.Provider value={intersectionData}>
+      <div className="w-screen h-screen overflow-hidden relative">
+        <ThemeToggle />
+        <ConnectionStatusBadge status={intersectionData.connectionStatus} />
+        <IntersectionGrid />
+      </div>
+    </TrafficContext.Provider>
   );
 }
 
