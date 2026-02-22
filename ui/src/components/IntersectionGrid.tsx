@@ -14,20 +14,19 @@ const roadBase: React.CSSProperties = {
 
 function roadGradient(dir: "vertical" | "horizontal"): React.CSSProperties {
     const isV = dir === "vertical";
+
+    // Create a double yellow line instead of a dashed white line
+    // Two 2px solid yellow lines separated by a 2px gap (total 6px width)
     return {
         ...roadBase,
         backgroundImage: [
             // Asphalt texture — fine grain
             `repeating-linear-gradient(${isV ? "0deg" : "90deg"}, transparent 0px, rgba(0,0,0,0.015) 1px, transparent 2px)`,
-            // Center dashed lane divider
-            `repeating-linear-gradient(${isV ? "180deg" : "90deg"}, var(--lane-divider) 0px, var(--lane-divider) 16px, transparent 16px, transparent 36px)`,
+            // Left/Top yellow line
+            `linear-gradient(${isV ? "90deg" : "180deg"}, transparent calc(50% - 3px), var(--lane-divider-yellow) calc(50% - 3px), var(--lane-divider-yellow) calc(50% - 1px), transparent calc(50% - 1px))`,
+            // Right/Bottom yellow line
+            `linear-gradient(${isV ? "90deg" : "180deg"}, transparent calc(50% + 1px), var(--lane-divider-yellow) calc(50% + 1px), var(--lane-divider-yellow) calc(50% + 3px), transparent calc(50% + 3px))`
         ].join(", "),
-        backgroundSize: isV
-            ? "100% 2px, 2px 36px"
-            : "2px 100%, 36px 2px",
-        backgroundPosition: isV
-            ? "0 0, center 0"
-            : "0 0, 0 center",
     };
 }
 
@@ -67,7 +66,7 @@ function Crosswalk({
     position: "top" | "bottom" | "left" | "right";
 }) {
     const isH = position === "left" || position === "right";
-    // Zebra crossing should span close to the road edges but leave a tiny margin
+    // Responsive sizing for the crosswalk to fit the road widths
     return (
         <div
             className="absolute"
@@ -105,7 +104,7 @@ function Crosswalk({
     );
 }
 
-/* ── Empty Corner Cell (replaces Grass) ───────────────────────── */
+/* ── Empty Corner Cell ────────────────────────────────────────── */
 function EmptyCell() {
     return (
         <div
@@ -114,17 +113,20 @@ function EmptyCell() {
     );
 }
 
-/* ── Intersection Center (4 Boxes) ────────────────────────────── */
+/* ── Intersection Center ──────────────────────────────────────── */
 function IntersectionCenter() {
     return (
         <div
-            className="w-full h-full relative p-1"
+            className="w-full h-full relative"
             style={{ backgroundColor: "var(--intersection-surface)" }}
         >
-            {/* Inner grid creating the 4 boxes divided by lane lines */}
+            {/*
+        Inner grid creating the 4 boxes divided by lane lines.
+        Using the background intersection-surface color.
+      */}
             <div
-                className="absolute inset-0 grid grid-cols-2 grid-rows-2 transition-theme"
-                style={{ gap: "2px", backgroundColor: "var(--lane-divider)" }}
+                className="absolute inset-0 grid grid-cols-2 grid-rows-2 transition-theme p-2"
+                style={{ gap: "2px", backgroundColor: "var(--road-edge)", padding: "8px" }}
             >
                 <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
                 <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
@@ -144,29 +146,31 @@ function IntersectionCenter() {
 }
 
 /* ── Pod positioning per direction ─────────────────────────────── */
+// The traffic lights are moved directly onto the intersection boxes now
 const POD_POSITION: Record<
     string,
     { align: string; justify: string; style: React.CSSProperties }
 > = {
+    // We place the pod closer to the stop line
     N: {
         align: "items-end",
         justify: "justify-center",
-        style: { paddingBottom: 36 },
+        style: { paddingBottom: 10 },
     },
     S: {
         align: "items-start",
         justify: "justify-center",
-        style: { paddingTop: 36 },
+        style: { paddingTop: 10 },
     },
     E: {
         align: "items-center",
         justify: "justify-start",
-        style: { paddingLeft: 36 },
+        style: { paddingLeft: 10 },
     },
     W: {
         align: "items-center",
         justify: "justify-end",
-        style: { paddingRight: 36 },
+        style: { paddingRight: 10 },
     },
 };
 
@@ -176,7 +180,7 @@ function RoadCell({
 }: {
     direction: "N" | "S" | "E" | "W";
 }) {
-    const { phase, secondsRemaining, totalPhaseDuration } = useTrafficLight(
+    const { phase, secondsRemaining } = useTrafficLight(
         OFFSETS[direction]
     );
     const isVertical = direction === "N" || direction === "S";
@@ -220,13 +224,13 @@ function RoadCell({
                 className="absolute inset-0 pointer-events-none"
                 style={{ backgroundImage: ambientGradient }}
             />
-            {/* Traffic light pod */}
-            <div style={pos.style} className="z-20">
+
+            {/* Traffic light pod at the edge of the stopline */}
+            <div style={pos.style} className="z-20 relative">
                 <TrafficLightPod
                     direction={direction}
                     phase={phase}
                     secondsRemaining={secondsRemaining}
-                    totalPhaseDuration={totalPhaseDuration}
                 />
             </div>
         </div>
@@ -237,12 +241,12 @@ function RoadCell({
 export function IntersectionGrid() {
     return (
         <div
-            className="w-full h-full bg-[var(--background)] transition-theme"
+            className="w-full h-full bg-green-200 transition-theme"
             style={{
                 display: "grid",
-                // Making the roads narrower: dynamic width up to 240px
-                gridTemplateColumns: "1fr min(25vw, 240px) 1fr",
-                gridTemplateRows: "1fr min(25vw, 240px) 1fr",
+                // Expand the center massively: minimum 360px up to 45vw
+                gridTemplateColumns: "1fr min(45vw, 360px) 1fr",
+                gridTemplateRows: "1fr min(45vw, 360px) 1fr",
             }}
         >
             {/* Row 1: Empty | North Road | Empty */}

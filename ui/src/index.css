@@ -54,10 +54,11 @@
   --ring: oklch(0.709 0.01 56.259);
 
   /* Intersection-specific */
-  --road-surface: #c8c0b8;
-  --road-surface-dark: #b8b0a8;
-  --intersection-surface: #aba49c;
-  --lane-divider: rgba(255, 255, 255, 0.5);
+  --road-surface: #2a2725;
+  --road-surface-dark: #232120;
+  --intersection-surface: #1e1c1b;
+  --lane-divider: rgba(255, 255, 255, 0.15);
+  --lane-divider-yellow: #eab308;
   --road-edge: rgba(255, 255, 255, 0.25);
   --crosswalk: rgba(255, 255, 255, 0.45);
   --text-overlay: rgba(0, 0, 0, 0.35);
@@ -99,6 +100,7 @@
   --road-surface-dark: #232120;
   --intersection-surface: #1e1c1b;
   --lane-divider: rgba(255, 255, 255, 0.12);
+  --lane-divider-yellow: #ca8a04;
   --road-edge: rgba(255, 255, 255, 0.06);
   --crosswalk: rgba(255, 255, 255, 0.15);
   --text-overlay: rgba(255, 255, 255, 0.3);
