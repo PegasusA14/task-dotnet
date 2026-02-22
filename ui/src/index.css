@@ -34,7 +34,7 @@
 /* ── Light Mode ───────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.97 0.001 106.424);
+  --background: #e4e4e7; /* zinc-200 */
   --foreground: oklch(0.147 0.004 49.25);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.147 0.004 49.25);
@@ -72,6 +72,8 @@
   --ambient-red: rgba(239, 68, 68, 0.08);
   --ambient-yellow: rgba(234, 179, 8, 0.08);
   --ambient-green: rgba(34, 197, 94, 0.08);
+
+  --grid-color: rgba(0, 0, 0, 0.04);
 }
 
 /* ── Dark Mode ────────────────────────────────────────────────── */
@@ -114,6 +116,16 @@
   --ambient-red: rgba(248, 113, 113, 0.06);
   --ambient-yellow: rgba(250, 204, 21, 0.06);
   --ambient-green: rgba(74, 222, 128, 0.06);
+
+  --grid-color: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Background Grid Pattern ──────────────────────────────────── */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 /* ── Base Reset ───────────────────────────────────────────────── */

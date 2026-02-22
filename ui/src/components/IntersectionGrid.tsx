@@ -108,7 +108,7 @@ function Crosswalk({
 function EmptyCell() {
     return (
         <div
-            className="transition-theme w-full h-full bg-[var(--background)]"
+            className="transition-theme w-full h-full bg-[var(--background)] bg-grid-pattern"
         />
     );
 }
@@ -176,31 +176,42 @@ const POD_POSITION: Record<
 
 /* ── Pavement Lane Arrow ──────────────────────────────────────── */
 function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
-    let positionClass = "";
-    let rotationClass = "";
+    let incomingPos = "";
+    let incomingRot = "";
+    let outgoingPos = "";
+    let outgoingRot = "";
 
+    // Right-hand traffic logic
     switch (direction) {
-        case "N": // Top road driving South: Arrow near bottom, left lane
-            positionClass = "bottom-16 left-1/4 -translate-x-1/2";
-            rotationClass = "rotate-180";
+        case "N": // Top road. Incoming traffic drives South (right/West lane). Outgoing drives North (left/East lane).
+            incomingPos = "bottom-16 left-1/4 -translate-x-1/2";
+            incomingRot = "rotate-180";
+            outgoingPos = "bottom-16 right-1/4 translate-x-1/2";
+            outgoingRot = "rotate-0";
             break;
-        case "S": // Bottom road driving North: Arrow near top, right lane
-            positionClass = "top-16 right-1/4 translate-x-1/2";
-            rotationClass = "rotate-0";
+        case "S": // Bottom road. Incoming traffic drives North (right/East lane). Outgoing drives South (left/West lane).
+            incomingPos = "top-16 right-1/4 translate-x-1/2";
+            incomingRot = "rotate-0";
+            outgoingPos = "top-16 left-1/4 -translate-x-1/2";
+            outgoingRot = "rotate-180";
             break;
-        case "E": // Right road driving West: Arrow near left, top lane
-            positionClass = "left-16 top-1/4 -translate-y-1/2";
-            rotationClass = "-rotate-90";
+        case "E": // Right road. Incoming traffic drives West (top/North lane). Outgoing drives East (bottom/South lane).
+            incomingPos = "left-16 top-1/4 -translate-y-1/2";
+            incomingRot = "-rotate-90";
+            outgoingPos = "left-16 bottom-1/4 translate-y-1/2";
+            outgoingRot = "rotate-90";
             break;
-        case "W": // Left road driving East: Arrow near right, bottom lane
-            positionClass = "right-16 bottom-1/4 translate-y-1/2";
-            rotationClass = "rotate-90";
+        case "W": // Left road. Incoming traffic drives East (bottom/South lane). Outgoing drives West (top/North lane).
+            incomingPos = "right-16 bottom-1/4 translate-y-1/2";
+            incomingRot = "rotate-90";
+            outgoingPos = "right-16 top-1/4 -translate-y-1/2";
+            outgoingRot = "-rotate-90";
             break;
     }
 
-    return (
+    const ArrowSVG = ({ pos, rot }: { pos: string; rot: string }) => (
         <div
-            className={`absolute ${positionClass} ${rotationClass} pointer-events-none opacity-40 z-10`}
+            className={`absolute ${pos} ${rot} pointer-events-none opacity-40 z-10`}
             style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
         >
             <svg
@@ -214,6 +225,13 @@ function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
                 <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#ffffff" />
             </svg>
         </div>
+    );
+
+    return (
+        <>
+            <ArrowSVG pos={incomingPos} rot={incomingRot} />
+            <ArrowSVG pos={outgoingPos} rot={outgoingRot} />
+        </>
     );
 }
 

@@ -1,0 +1,64 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio files
+.vs/
+Generated\ Files/
+[Tt]est[Rr]esult*/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet Packages
+*.nuget.props
+*.nuget.targets
+pkg/
+packages/
+
+# Publish output
+publish/
+*.[Pp]ublish.xml
+*.pubxml
+*.pubxml.user
+
+# .NET Core / .NET 9
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Environment secrets
+.env
+appsettings.Development.json
