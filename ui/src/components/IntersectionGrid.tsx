@@ -174,6 +174,49 @@ const POD_POSITION: Record<
     },
 };
 
+/* ── Pavement Lane Arrow ──────────────────────────────────────── */
+function LaneArrow({ direction }: { direction: "N" | "S" | "E" | "W" }) {
+    let positionClass = "";
+    let rotationClass = "";
+
+    switch (direction) {
+        case "N": // Top road driving South: Arrow near bottom, left lane
+            positionClass = "bottom-16 left-1/4 -translate-x-1/2";
+            rotationClass = "rotate-180";
+            break;
+        case "S": // Bottom road driving North: Arrow near top, right lane
+            positionClass = "top-16 right-1/4 translate-x-1/2";
+            rotationClass = "rotate-0";
+            break;
+        case "E": // Right road driving West: Arrow near left, top lane
+            positionClass = "left-16 top-1/4 -translate-y-1/2";
+            rotationClass = "-rotate-90";
+            break;
+        case "W": // Left road driving East: Arrow near right, bottom lane
+            positionClass = "right-16 bottom-1/4 translate-y-1/2";
+            rotationClass = "rotate-90";
+            break;
+    }
+
+    return (
+        <div
+            className={`absolute ${positionClass} ${rotationClass} pointer-events-none opacity-40 z-10`}
+            style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
+        >
+            <svg
+                width="28"
+                height="72"
+                viewBox="0 0 24 64"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                {/* A stretched, authentic pavement arrow */}
+                <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#ffffff" />
+            </svg>
+        </div>
+    );
+}
+
 /* ── Road Cell with Pod ───────────────────────────────────────── */
 function RoadCell({
     direction,
@@ -225,6 +268,8 @@ function RoadCell({
                 style={{ backgroundImage: ambientGradient }}
             />
 
+            <LaneArrow direction={direction} />
+
             {/* Traffic light pod at the edge of the stopline */}
             <div style={pos.style} className="z-20 relative">
                 <TrafficLightPod
@@ -241,7 +286,7 @@ function RoadCell({
 export function IntersectionGrid() {
     return (
         <div
-            className="w-full h-full bg-green-200 transition-theme"
+            className="w-full h-full bg-[var(--background)] transition-theme"
             style={{
                 display: "grid",
                 // Expand the center massively: minimum 360px up to 45vw
