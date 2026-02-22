@@ -1,1 +1,211 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Intersection Scene Tokens ────────────────────────────────── */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* ── Light Mode ───────────────────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.97 0.001 106.424);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.216 0.006 56.043);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.216 0.006 56.043);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+
+  /* Intersection-specific */
+  --road-surface: #c8c0b8;
+  --road-surface-dark: #b8b0a8;
+  --intersection-surface: #aba49c;
+  --lane-divider: rgba(255, 255, 255, 0.5);
+  --road-edge: rgba(255, 255, 255, 0.25);
+  --crosswalk: rgba(255, 255, 255, 0.45);
+  --text-overlay: rgba(0, 0, 0, 0.35);
+
+  --light-red: #ef4444;
+  --light-yellow: #eab308;
+  --light-green: #22c55e;
+  --glow-red: rgba(239, 68, 68, 0.4);
+  --glow-yellow: rgba(234, 179, 8, 0.4);
+  --glow-green: rgba(34, 197, 94, 0.4);
+  --ambient-red: rgba(239, 68, 68, 0.08);
+  --ambient-yellow: rgba(234, 179, 8, 0.08);
+  --ambient-green: rgba(34, 197, 94, 0.08);
+}
+
+/* ── Dark Mode ────────────────────────────────────────────────── */
+.dark {
+  --background: oklch(0.12 0.004 49.25);
+  --foreground: oklch(0.985 0.001 106.423);
+  --card: oklch(0.18 0.005 50);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.18 0.005 50);
+  --popover-foreground: oklch(0.985 0.001 106.423);
+  --primary: oklch(0.923 0.003 48.717);
+  --primary-foreground: oklch(0.216 0.006 56.043);
+  --secondary: oklch(0.268 0.007 34.298);
+  --secondary-foreground: oklch(0.985 0.001 106.423);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.709 0.01 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.553 0.013 58.071);
+
+  /* Intersection-specific */
+  --road-surface: #2a2725;
+  --road-surface-dark: #232120;
+  --intersection-surface: #1e1c1b;
+  --lane-divider: rgba(255, 255, 255, 0.12);
+  --road-edge: rgba(255, 255, 255, 0.06);
+  --crosswalk: rgba(255, 255, 255, 0.15);
+  --text-overlay: rgba(255, 255, 255, 0.3);
+
+  --light-red: #f87171;
+  --light-yellow: #facc15;
+  --light-green: #4ade80;
+  --glow-red: rgba(248, 113, 113, 0.55);
+  --glow-yellow: rgba(250, 204, 21, 0.55);
+  --glow-green: rgba(74, 222, 128, 0.55);
+  --ambient-red: rgba(248, 113, 113, 0.06);
+  --ambient-yellow: rgba(250, 204, 21, 0.06);
+  --ambient-green: rgba(74, 222, 128, 0.06);
+}
+
+/* ── Base Reset ───────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+}
+
+/* ── Keyframes ────────────────────────────────────────────────── */
+@keyframes pulse-light {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes card-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+}
+
+@keyframes glow-breathe {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Card Animations ──────────────────────────────────────────── */
+.card-entering {
+  animation: card-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.card-exiting {
+  animation: card-exit 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.bulb-pulse {
+  animation: pulse-light 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Smooth Transitions ──────────────────────────────────────── */
+.transition-theme {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+.transition-glow {
+  transition: background-color 0.6s ease, box-shadow 0.6s ease;
+}
