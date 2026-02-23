@@ -76,28 +76,55 @@ function EmptyCell() {
     );
 }
 
+/*
+ * Two arrow states only:
+ *   "active" → 100% opacity, ghost white (active green signal lane)
+ *   "dimmed" →  40% opacity, same white  (all red signal lanes)
+ */
+type ArrowState = "active" | "dimmed";
+
+const ARROW_OPACITY: Record<ArrowState, number> = {
+    active: 1,
+    dimmed: 0.4,
+};
+
 /**
  * Road marking arrow — flat, no glow, no shadow.
- * Active = full opacity. Inactive = 15% opacity. Smooth 0.4s transition.
+ * Active = ghost white at full opacity. Dimmed = 40%.
+ * Includes optional label for active arrows only.
  */
-function ArrowSVG({ pos, rot, active }: {
+function ArrowSVG({ pos, rot, state, label, isVertical }: {
     pos: string;
     rot: string;
-    active: boolean;
+    state: ArrowState;
+    label?: string;
+    isVertical: boolean;
 }) {
+    const showLabel = state === "active" && label;
+
     return (
         <div
-            className={`absolute ${pos} ${rot} pointer-events-none z-10`}
+            className={`absolute ${pos} ${rot} pointer-events-none z-10
+                        flex ${isVertical ? "flex-col" : "flex-row"} items-center gap-1`}
             style={{
-                opacity: active ? 1 : 0.15,
+                opacity: ARROW_OPACITY[state],
                 transition: "opacity 0.4s ease",
             }}
         >
+            {/* Label above/before arrow tip (only for active) */}
+            {showLabel && (
+                <span
+                    className="font-mono text-[10px] uppercase tracking-widest text-white whitespace-nowrap"
+                    style={{
+                        opacity: 1,
+                        transition: "opacity 0.3s ease",
+                    }}
+                >
+                    {label}
+                </span>
+            )}
             <svg width="28" height="72" viewBox="0 0 24 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M12 2L2 22H8V62H16V22H22L12 2Z"
-                    className="fill-stone-600 dark:fill-stone-300"
-                />
+                <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#f5f5f5" />
             </svg>
         </div>
     );
@@ -105,9 +132,6 @@ function ArrowSVG({ pos, rot, active }: {
 
 /*
  * ARROW-TO-SIGNAL MAPPING
- *
- * Each road has two arrows (bidirectional lanes). Each arrow represents
- * traffic controlled by one specific signal:
  *
  *   Road | Incoming Arrow         | Signal | Outgoing Arrow          | Signal
  *   -----+------------------------+--------+-------------------------+-------
@@ -123,10 +147,16 @@ const ARROW_SIGNAL: Record<string, { incoming: string; outgoing: string }> = {
     W: { incoming: "L1", outgoing: "L3" },
 };
 
+function resolveArrowState(arrowSignal: string, activeSignal: string): ArrowState {
+    return arrowSignal === activeSignal ? "active" : "dimmed";
+}
+
 function LaneArrows({ direction, activeSignal }: { direction: "N" | "S" | "E" | "W"; activeSignal: string }) {
     const mapping = ARROW_SIGNAL[direction];
-    const incomingActive = mapping.incoming === activeSignal;
-    const outgoingActive = mapping.outgoing === activeSignal;
+    const inState = resolveArrowState(mapping.incoming, activeSignal);
+    const outState = resolveArrowState(mapping.outgoing, activeSignal);
+    const isVertical = direction === "N" || direction === "S";
+    const activeLabel = `${activeSignal} Vehicles`;
 
     let incomingPos = "";
     let incomingRot = "";
@@ -162,8 +192,20 @@ function LaneArrows({ direction, activeSignal }: { direction: "N" | "S" | "E" | 
 
     return (
         <>
-            <ArrowSVG pos={incomingPos} rot={incomingRot} active={incomingActive} />
-            <ArrowSVG pos={outgoingPos} rot={outgoingRot} active={outgoingActive} />
+            <ArrowSVG
+                pos={incomingPos}
+                rot={incomingRot}
+                state={inState}
+                label={inState === "active" ? activeLabel : undefined}
+                isVertical={isVertical}
+            />
+            <ArrowSVG
+                pos={outgoingPos}
+                rot={outgoingRot}
+                state={outState}
+                label={outState === "active" ? activeLabel : undefined}
+                isVertical={isVertical}
+            />
         </>
     );
 }
