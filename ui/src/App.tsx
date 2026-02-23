@@ -47,7 +47,7 @@ function App() {
               aria-label="Show all cards"
             >
               <Eye size={13} strokeWidth={1.8} />
-              <span>CARDS</span>
+              <span>SIGNAL STATS</span>
             </button>
 
             {/* Highlight Active Toggle */}

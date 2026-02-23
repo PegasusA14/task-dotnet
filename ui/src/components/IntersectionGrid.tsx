@@ -1,5 +1,7 @@
-import { useTrafficLight, type TrafficPhase } from "@/hooks/useTrafficLight";
+import { useContext } from "react";
+import { useTrafficLight } from "@/hooks/useTrafficLight";
 import { TrafficLightPod } from "./TrafficLightPod";
+import { TrafficContext } from "@/hooks/useIntersection";
 
 const roadBase: React.CSSProperties = {
     backgroundColor: "var(--road-surface)",
@@ -74,23 +76,58 @@ function EmptyCell() {
     );
 }
 
-function ArrowSVG({ pos, rot, animate }: { pos: string; rot: string; animate: boolean }) {
+/**
+ * Road marking arrow — flat, no glow, no shadow.
+ * Active = full opacity. Inactive = 15% opacity. Smooth 0.4s transition.
+ */
+function ArrowSVG({ pos, rot, active }: {
+    pos: string;
+    rot: string;
+    active: boolean;
+}) {
     return (
         <div
-            className={`absolute ${pos} ${rot} pointer-events-none z-10 ${animate ? "animate-pulse opacity-80" : "opacity-40"}`}
+            className={`absolute ${pos} ${rot} pointer-events-none z-10`}
             style={{
-                filter: animate ? "drop-shadow(0 2px 8px rgba(255,255,255,0.8))" : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
-                transition: "opacity 0.3s ease, filter 0.3s ease"
+                opacity: active ? 1 : 0.15,
+                transition: "opacity 0.4s ease",
             }}
         >
             <svg width="28" height="72" viewBox="0 0 24 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#ffffff" />
+                <path
+                    d="M12 2L2 22H8V62H16V22H22L12 2Z"
+                    className="fill-stone-600 dark:fill-stone-300"
+                />
             </svg>
         </div>
     );
 }
 
-function LaneArrows({ direction, phase }: { direction: "N" | "S" | "E" | "W"; phase: TrafficPhase }) {
+/*
+ * ARROW-TO-SIGNAL MAPPING
+ *
+ * Each road has two arrows (bidirectional lanes). Each arrow represents
+ * traffic controlled by one specific signal:
+ *
+ *   Road | Incoming Arrow         | Signal | Outgoing Arrow          | Signal
+ *   -----+------------------------+--------+-------------------------+-------
+ *   N    | ↓ (south, NS traffic)  | L2     | ↑ (north, SN traffic)   | L4
+ *   S    | ↑ (north, SN traffic)  | L4     | ↓ (south, NS traffic)   | L2
+ *   E    | ← (west, EW traffic)   | L3     | → (east, WE traffic)    | L1
+ *   W    | → (east, WE traffic)   | L1     | ← (west, EW traffic)    | L3
+ */
+const ARROW_SIGNAL: Record<string, { incoming: string; outgoing: string }> = {
+    N: { incoming: "L2", outgoing: "L4" },
+    S: { incoming: "L4", outgoing: "L2" },
+    E: { incoming: "L3", outgoing: "L1" },
+    W: { incoming: "L1", outgoing: "L3" },
+};
+
+function LaneArrows({ direction, activeSignal }: { direction: "N" | "S" | "E" | "W"; activeSignal: string }) {
+    const mapping = ARROW_SIGNAL[direction];
+    const incomingActive = mapping.incoming === activeSignal;
+    const outgoingActive = mapping.outgoing === activeSignal;
+
     let incomingPos = "";
     let incomingRot = "";
     let outgoingPos = "";
@@ -123,13 +160,22 @@ function LaneArrows({ direction, phase }: { direction: "N" | "S" | "E" | "W"; ph
             break;
     }
 
-    const isGreen = phase === "green";
     return (
         <>
-            <ArrowSVG pos={incomingPos} rot={incomingRot} animate={false} />
-            <ArrowSVG pos={outgoingPos} rot={outgoingRot} animate={isGreen} />
+            <ArrowSVG pos={incomingPos} rot={incomingRot} active={incomingActive} />
+            <ArrowSVG pos={outgoingPos} rot={outgoingRot} active={outgoingActive} />
         </>
     );
+}
+
+/** Derive active signal ID ("L1"/"L2"/"L3"/"L4") from the currentPhase string */
+function deriveActiveSignal(phase: string | null): string {
+    if (!phase) return "";
+    if (phase.includes("L1")) return "L1";
+    if (phase.includes("L2")) return "L2";
+    if (phase.includes("L3")) return "L3";
+    if (phase.includes("L4")) return "L4";
+    return "";
 }
 
 function IntersectionCenter() {
@@ -143,6 +189,7 @@ function IntersectionCenter() {
             className="w-full h-full relative transition-theme z-20 flex items-center justify-center overflow-visible"
             style={{ backgroundColor: "var(--road-surface-dark)" }}
         >
+            {/* Ambient depth vignette */}
             <div
                 className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-20"
                 style={{ backgroundImage: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.9) 100%)" }}
@@ -214,8 +261,7 @@ function IntersectionCenter() {
     );
 }
 
-function RoadCell({ direction }: { direction: "N" | "S" | "E" | "W" }) {
-    const { phase } = useTrafficLight(direction);
+function RoadCell({ direction, activeSignal }: { direction: "N" | "S" | "E" | "W"; activeSignal: string }) {
     const isVertical = direction === "N" || direction === "S";
 
     const ambientGradient = (() => {
@@ -237,12 +283,15 @@ function RoadCell({ direction }: { direction: "N" | "S" | "E" | "W" }) {
                 position={direction === "N" ? "bottom" : direction === "S" ? "top" : direction === "E" ? "left" : "right"}
             />
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: ambientGradient }} />
-            <LaneArrows direction={direction} phase={phase} />
+            <LaneArrows direction={direction} activeSignal={activeSignal} />
         </div>
     );
 }
 
 export function IntersectionGrid() {
+    const ctx = useContext(TrafficContext);
+    const activeSignal = deriveActiveSignal(ctx?.phase ?? null);
+
     return (
         <div
             className="w-full h-full bg-[var(--background)] transition-theme"
@@ -253,13 +302,13 @@ export function IntersectionGrid() {
             }}
         >
             <EmptyCell />
-            <RoadCell direction="N" />
+            <RoadCell direction="N" activeSignal={activeSignal} />
             <EmptyCell />
-            <RoadCell direction="W" />
+            <RoadCell direction="W" activeSignal={activeSignal} />
             <IntersectionCenter />
-            <RoadCell direction="E" />
+            <RoadCell direction="E" activeSignal={activeSignal} />
             <EmptyCell />
-            <RoadCell direction="S" />
+            <RoadCell direction="S" activeSignal={activeSignal} />
             <EmptyCell />
         </div>
     );
