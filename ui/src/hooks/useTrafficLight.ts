@@ -8,19 +8,22 @@ export interface TrafficLightState {
     phase: TrafficPhase;
     secondsRemaining: number;
     totalPhaseDuration: number;
+    isPreGreen: boolean;
 }
 
 export function useTrafficLight(
     offsetSeconds: number,
     directionSnapshot?: DirectionalLightState,
     serverSecondsRemaining?: number,
-    serverTotalPhaseDuration?: number
+    serverTotalPhaseDuration?: number,
+    serverIsPreGreen?: boolean
 ): TrafficLightState {
     const context = useContext(TrafficContext);
 
     let activeDirectionSnapshot = directionSnapshot;
     let activeSeconds = serverSecondsRemaining;
     let activeTotal = serverTotalPhaseDuration;
+    let activeIsPreGreen = serverIsPreGreen;
 
     if (context && !directionSnapshot) {
         let dir: "north" | "south" | "east" | "west" | null = null;
@@ -36,18 +39,21 @@ export function useTrafficLight(
             };
             activeSeconds = context[dir]!.secondsRemaining;
             activeTotal = context[dir]!.totalPhaseDuration;
+            activeIsPreGreen = context[dir]!.isPreGreen;
         }
     }
 
     if (
         activeDirectionSnapshot !== undefined &&
         activeSeconds !== undefined &&
-        activeTotal !== undefined
+        activeTotal !== undefined &&
+        activeIsPreGreen !== undefined
     ) {
         return {
             phase: activeDirectionSnapshot.state.toLowerCase() as TrafficPhase,
             secondsRemaining: activeSeconds,
             totalPhaseDuration: activeTotal,
+            isPreGreen: activeIsPreGreen,
         };
     }
 
@@ -56,5 +62,6 @@ export function useTrafficLight(
         phase: "red",
         secondsRemaining: 0,
         totalPhaseDuration: 0,
+        isPreGreen: false,
     };
 }

@@ -8,6 +8,7 @@ export interface DirectionalState {
     state: LightState;
     secondsRemaining: number;
     totalPhaseDuration: number;
+    isPreGreen: boolean;
 }
 
 export function useIntersection() {
@@ -21,7 +22,8 @@ export function useIntersection() {
         return {
             state: light.state,
             secondsRemaining: snapshot.secondsRemaining,
-            totalPhaseDuration: snapshot.totalPhaseDuration
+            totalPhaseDuration: snapshot.totalPhaseDuration,
+            isPreGreen: snapshot.isPreGreen
         };
     };
 
@@ -31,6 +33,7 @@ export function useIntersection() {
         east: getDirection("East"),
         west: getDirection("West"),
         phase: snapshot ? snapshot.phase : null,
+        isPreGreen: snapshot ? snapshot.isPreGreen : false,
         connectionStatus
     };
 }

@@ -5,7 +5,7 @@ export function ThemeToggle() {
     const [isDark, setIsDark] = useState(() => {
         if (typeof window !== "undefined") {
             const stored = localStorage.getItem("theme");
-            return stored ? stored === "dark" : true; // Default dark
+            return stored ? stored === "dark" : true;
         }
         return true;
     });
@@ -23,7 +23,7 @@ export function ThemeToggle() {
     return (
         <button
             onClick={() => setIsDark((d) => !d)}
-            className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full
                  border border-[var(--border)] backdrop-blur-md
                  bg-[var(--card)]/80 text-[var(--foreground)]
                  hover:bg-[var(--accent)] cursor-pointer

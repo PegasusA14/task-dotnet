@@ -1,30 +1,23 @@
 import { useMemo } from "react";
 import type { TrafficPhase } from "@/hooks/useTrafficLight";
+import type { IntersectionPhase } from "@/types/TrafficTypes";
+import { useIntersection } from "@/hooks/useIntersection";
 
 interface TrafficLightCardProps {
     phase: TrafficPhase;
     secondsRemaining: number;
+    totalPhaseDuration: number;
     direction: "N" | "S" | "E" | "W";
     visible: boolean;
+    isPreGreen: boolean;
 }
 
-const PHASE_CONFIG: Record<TrafficPhase, { color: string; glow: string; label: string }> = {
-    red: {
-        color: "var(--light-red)",
-        glow: "var(--glow-red)",
-        label: "STOP",
-    },
-    yellow: {
-        color: "var(--light-yellow)",
-        glow: "var(--glow-yellow)",
-        label: "READY",
-    },
-    green: {
-        color: "var(--light-green)",
-        glow: "var(--glow-green)",
-        label: "GO",
-    },
-} as const;
+const HumanPhaseNames: Record<IntersectionPhase, string> = {
+    NS_Green: "North-South Flowing",
+    EW_PreGreen: "East-West Preparing",
+    EW_Green: "East-West Flowing",
+    NS_PreGreen: "North-South Preparing",
+};
 
 const DIRECTION_NAMES: Record<string, string> = {
     N: "North",
@@ -33,110 +26,137 @@ const DIRECTION_NAMES: Record<string, string> = {
     W: "West",
 };
 
+const PHASE_COLORS: Record<TrafficPhase, string> = {
+    red: "var(--light-red)",
+    yellow: "var(--light-yellow)",
+    green: "var(--light-green)",
+};
+
 export function TrafficLightCard({
     phase,
     secondsRemaining,
+    totalPhaseDuration,
     direction,
     visible,
+    isPreGreen,
 }: TrafficLightCardProps) {
-    const config = PHASE_CONFIG[phase];
+    const context = useIntersection();
+    const serverPhase = context?.phase || "NS_Green";
 
-    const timerDisplay = String(secondsRemaining).padStart(2, "0");
-
-    // Memoize the card position styles based on direction
+    // Position cards into their respective LANES (not overlapping center)
     const positionClass = useMemo(() => {
         switch (direction) {
-            case "N":
-                return "bottom-full left-1/2 -translate-x-1/2 mb-2";
-            case "S":
-                return "top-full left-1/2 -translate-x-1/2 mt-2";
-            case "E":
-                return "left-full top-1/2 -translate-y-1/2 ml-2";
-            case "W":
-                return "right-full top-1/2 -translate-y-1/2 mr-2";
-            default:
-                return "";
+            case "N": return "bottom-full left-1/2 -translate-x-1/2 mb-3";
+            case "S": return "top-full left-1/2 -translate-x-1/2 mt-3";
+            case "E": return "left-full top-1/2 -translate-y-1/2 ml-3";
+            case "W": return "right-full top-1/2 -translate-y-1/2 mr-3";
+            default: return "";
         }
     }, [direction]);
 
+    // Calculate time until green
+    let timeUntilGreen = 0;
+    if (phase === "red") {
+        timeUntilGreen = secondsRemaining;
+        if ((direction === "N" || direction === "S") && serverPhase === "EW_Green") {
+            timeUntilGreen += 3;
+        } else if ((direction === "N" || direction === "S") && serverPhase === "EW_PreGreen") {
+            timeUntilGreen += 45 + 3;
+        } else if ((direction === "E" || direction === "W") && serverPhase === "NS_Green") {
+            timeUntilGreen += 3;
+        } else if ((direction === "E" || direction === "W") && serverPhase === "NS_PreGreen") {
+            timeUntilGreen += 45 + 3;
+        }
+    }
+
+    const phaseColor = PHASE_COLORS[phase];
+    let statusLabel = "";
+    if (phase === "red") statusLabel = "STOP";
+    if (phase === "yellow") statusLabel = isPreGreen ? "READY" : "CAUTION";
+    if (phase === "green") statusLabel = "GO";
+
+    // Progress for timer arc
+    const radius = 18;
+    const circumference = 2 * Math.PI * radius;
+    const progress = totalPhaseDuration > 0 ? secondsRemaining / totalPhaseDuration : 0;
+    const strokeDashoffset = circumference * (1 - progress);
+
     return (
         <div
-            className={`absolute ${positionClass} z-50 pointer-events-none
-                  ${visible ? "card-entering" : "card-exiting"}`}
-            style={{ willChange: "transform, opacity" }}
+            className={`absolute ${positionClass} z-50 pointer-events-none transition-all duration-300
+                  ${visible ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"}`}
+            style={{ width: "180px" }}
         >
-            <div
-                className="flex flex-col items-center gap-2 p-3 px-4 rounded-xl
-                    border border-[var(--border)]
-                    bg-[var(--card)]/95 backdrop-blur-xl
-                    shadow-2xl min-w-[120px]"
-            >
-                {/* Direction label */}
-                <div
-                    className="text-[9px] tracking-[0.25em] uppercase opacity-60 mb-1 font-bold"
-                    style={{ color: "var(--foreground)" }}
-                >
-                    {DIRECTION_NAMES[direction]}
-                </div>
-
-                {/* Traffic light housing */}
-                <div
-                    className="relative flex flex-col items-center gap-[4px] p-2 px-3 rounded-lg"
-                    style={{
-                        background:
-                            "linear-gradient(180deg, #2a2a2e 0%, #1a1a1e 50%, #111114 100%)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.4)",
-                    }}
-                >
-                    {(["red", "yellow", "green"] as const).map((bulbPhase) => {
-                        const isActive = bulbPhase === phase;
-                        const bulbConfig = PHASE_CONFIG[bulbPhase];
-
-                        return (
-                            <div
-                                key={bulbPhase}
-                                className="relative rounded-full"
-                                style={{
-                                    width: 18,
-                                    height: 18,
-                                    background: isActive
-                                        ? `radial-gradient(circle at 40% 35%, ${bulbConfig.color}, color-mix(in oklch, ${bulbConfig.color} 70%, black))`
-                                        : "radial-gradient(circle at 40% 35%, #3a3a3e, #1a1a1e)",
-                                    boxShadow: isActive
-                                        ? `0 0 8px 1px ${bulbConfig.glow}, 0 0 16px 2px ${bulbConfig.glow}, inset 0 -2px 4px rgba(0,0,0,0.3)`
-                                        : "inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.04)",
-                                    transition: "box-shadow 0.4s ease, background 0.4s ease",
-                                }}
-                            />
-                        );
-                    })}
-                </div>
-
-                {/* Timer without arc */}
-                <div className="relative flex items-center justify-center mt-1 mb-1">
+            <div className="flex flex-col gap-3 p-4 rounded-xl border border-[var(--border)] bg-white dark:bg-stone-900 shadow-2xl text-left">
+                {/* Direction + Phase */}
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] tracking-[0.2em] uppercase opacity-60 font-semibold">
+                        {DIRECTION_NAMES[direction]}
+                    </span>
                     <span
-                        className="text-4xl"
+                        className="text-[10px] tracking-[0.15em] uppercase font-bold px-2 py-0.5 rounded-full"
                         style={{
-                            // Pixelated, jagged system font stack simulating realistic LED segments
-                            fontFamily: "'Courier New', Courier, monospace",
-                            fontWeight: 900,
-                            letterSpacing: "0.05em",
-                            color: config.color,
-                            textShadow: `0 0 8px ${config.glow}, 0 0 2px ${config.color}`,
+                            color: phaseColor,
+                            backgroundColor: `color-mix(in oklch, ${phaseColor} 15%, transparent)`,
                         }}
                     >
-                        {timerDisplay}
+                        {statusLabel}
                     </span>
                 </div>
 
-                {/* Phase label */}
-                <div
-                    className="text-[10px] tracking-[0.3em] uppercase font-bold opacity-80"
-                    style={{ color: config.color, textShadow: `0 0 4px ${config.glow}` }}
-                >
-                    {config.label}
+                {/* Timer Circle + Countdown */}
+                <div className="flex items-center gap-3">
+                    <div className="relative flex items-center justify-center shrink-0" style={{ width: 48, height: 48 }}>
+                        <svg width="48" height="48" className="absolute -rotate-90">
+                            <circle cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3" className="opacity-10" style={{ color: phaseColor }} />
+                            <circle
+                                cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="round"
+                                style={{ color: phaseColor, transition: "stroke-dashoffset 0.5s linear" }}
+                            />
+                        </svg>
+                        <span className="font-mono font-bold text-lg z-10" style={{ color: phaseColor }}>
+                            {String(secondsRemaining).padStart(2, "0")}
+                        </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold text-foreground leading-tight">
+                            {HumanPhaseNames[serverPhase] || "Unknown"}
+                        </span>
+                        <span className="text-[10px] opacity-60">
+                            {phase === "yellow"
+                                ? (isPreGreen ? "Prepare to go" : "Caution")
+                                : phase === "red"
+                                    ? "Waiting for green"
+                                    : "Traffic flowing"}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Time until green */}
+                {phase === "red" && (
+                    <>
+                        <div className="w-full h-px bg-[var(--border)]" />
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="opacity-60">Green in</span>
+                            <span className="font-mono font-bold" style={{ color: "var(--light-green)" }}>
+                                {timeUntilGreen}s
+                            </span>
+                        </div>
+                    </>
+                )}
+
+                {/* Phase duration bar */}
+                <div className="w-full h-1 rounded-full overflow-hidden bg-[var(--border)]">
+                    <div
+                        className="h-full rounded-full transition-all duration-500 ease-linear"
+                        style={{
+                            width: `${progress * 100}%`,
+                            backgroundColor: phaseColor,
+                        }}
+                    />
                 </div>
             </div>
         </div>

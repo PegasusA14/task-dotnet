@@ -1,33 +1,35 @@
-import { useState, useRef, useEffect } from "react";
+import { useContext, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { TrafficPhase } from "@/hooks/useTrafficLight";
 import { TrafficLightCard } from "./TrafficLightCard";
+import { UIToggleContext } from "@/App";
 
 interface TrafficLightPodProps {
     direction: "N" | "S" | "E" | "W";
     phase: TrafficPhase;
     secondsRemaining: number;
+    totalPhaseDuration: number;
+    isPreGreen: boolean;
+    orientation?: "vertical" | "horizontal";
 }
 
 const PHASE_CONFIG: Record<
     TrafficPhase,
-    { color: string; glow: string; label: string; ambient: string }
+    { color: string; glow: string; ambient: string }
 > = {
     red: {
         color: "var(--light-red)",
         glow: "var(--glow-red)",
-        label: "STOP",
         ambient: "var(--ambient-red)",
     },
     yellow: {
         color: "var(--light-yellow)",
         glow: "var(--glow-yellow)",
-        label: "READY",
         ambient: "var(--ambient-yellow)",
     },
     green: {
         color: "var(--light-green)",
         glow: "var(--glow-green)",
-        label: "GO",
         ambient: "var(--ambient-green)",
     },
 } as const;
@@ -38,89 +40,90 @@ export function TrafficLightPod({
     direction,
     phase,
     secondsRemaining,
+    totalPhaseDuration,
+    isPreGreen,
+    orientation = "vertical",
 }: TrafficLightPodProps) {
+    const [isHovered, setIsHovered] = useState(false);
+    const { showAllCards, highlightActive } = useContext(UIToggleContext);
+
     const config = PHASE_CONFIG[phase];
-    const prevPhaseRef = useRef(phase);
-    const pulseRef = useRef<HTMLDivElement>(null);
+    const isH = orientation === "horizontal";
 
-    const [hovered, setHovered] = useState(false);
-    const [showCard, setShowCard] = useState(false);
-
-    const handleMouseEnter = () => {
-        setHovered(true);
-        setShowCard(true);
-    };
-
-    const handleMouseLeave = () => {
-        setHovered(false);
-        setTimeout(() => setShowCard(false), 160);
-    };
-
-    // Pulse animation on phase change
-    useEffect(() => {
-        if (prevPhaseRef.current !== phase && pulseRef.current) {
-            const el = pulseRef.current;
-            el.classList.remove("bulb-pulse");
-            // Force reflow
-            void el.offsetWidth;
-            el.classList.add("bulb-pulse");
-        }
-        prevPhaseRef.current = phase;
-    }, [phase]);
-
-    // The glowing beam projection should still point toward oncoming traffic
     const beamRotation = {
-        N: 180, // Faces North lane
-        E: -90, // Faces East lane
-        S: 0,   // Faces South lane
-        W: 90,  // Faces West lane
+        N: 180,
+        E: -90,
+        S: 0,
+        W: 90,
     }[direction];
 
+    // If highlightActive is on and this pod is NOT green, dim it
+    const isDimmed = highlightActive && phase !== "green";
+    const shouldShowCard = showAllCards || isHovered;
+
     return (
-        <div
-            className="relative flex items-center justify-center cursor-pointer transition-theme z-40 transform scale-90"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+        <motion.div
+            className={`relative flex items-center justify-center transition-all duration-300 z-40`}
+            style={{ opacity: isDimmed ? 0.35 : 1 }}
+            whileHover={{ scale: 1.08 }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            {/* White Container background */}
-            <div
-                className="relative flex flex-col items-center p-2 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-2xl transition-transform"
-                style={{
-                    boxShadow: `0 8px 24px -4px ${config.glow}, 0 4px 12px rgba(0,0,0,0.15)`,
-                }}
-            >
-                {/* The Main Realistic Housing (Black) */}
+            {/* White Wrapped Container */}
+            <div className="p-1.5 rounded-2xl bg-white dark:bg-stone-800 shadow-xl border border-stone-300 dark:border-stone-700 z-10">
                 <div
-                    className="relative flex flex-col items-center gap-[6px] p-2 px-3 rounded-lg"
+                    className={`relative flex gap-[6px] ${isH ? "flex-row py-2 px-3" : "flex-col p-2 px-3"} rounded-[10px] z-10`}
                     style={{
-                        background:
-                            "linear-gradient(180deg, #2a2a2e 0%, #1a1a1e 50%, #111114 100%)",
+                        background: isH
+                            ? "linear-gradient(90deg, #2a2a2e 0%, #1a1a1e 50%, #111114 100%)"
+                            : "linear-gradient(180deg, #2a2a2e 0%, #1a1a1e 50%, #111114 100%)",
                         border: "1px solid rgba(255,255,255,0.08)",
-                        boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.4)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px rgba(0,0,0,0.5)",
                     }}
                 >
                     {BULB_ORDER.map((bulbPhase) => {
                         const isActive = bulbPhase === phase;
                         const bulbConfig = PHASE_CONFIG[bulbPhase];
+                        const isPulsing = isActive && bulbPhase === "yellow" && isPreGreen;
 
                         return (
                             <div
                                 key={bulbPhase}
-                                ref={isActive ? pulseRef : undefined}
-                                className="relative rounded-full"
+                                className="relative rounded-full shrink-0 flex items-center justify-center"
                                 style={{
-                                    width: 24,
-                                    height: 24,
+                                    width: 22,
+                                    height: 22,
                                     background: isActive
                                         ? `radial-gradient(circle at 40% 35%, ${bulbConfig.color}, color-mix(in oklch, ${bulbConfig.color} 70%, black))`
                                         : "radial-gradient(circle at 40% 35%, #3a3a3e, #1a1a1e)",
                                     boxShadow: isActive
-                                        ? `0 0 8px 2px ${bulbConfig.glow}, 0 0 20px 4px ${bulbConfig.glow}, inset 0 -2px 4px rgba(0,0,0,0.3)`
+                                        ? `inset 0 -2px 4px rgba(0,0,0,0.3)`
                                         : "inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.04)",
-                                    transition: "box-shadow 0.4s ease, background 0.4s ease",
+                                    transition: "background 0.4s ease, box-shadow 0.4s ease",
                                 }}
-                            />
+                            >
+                                <AnimatePresence>
+                                    {isActive && (
+                                        <motion.div
+                                            initial={{ opacity: 0.5 }}
+                                            animate={
+                                                isPulsing
+                                                    ? { scale: [1, 1.12, 1] }
+                                                    : { opacity: 1 }
+                                            }
+                                            transition={
+                                                isPulsing
+                                                    ? { duration: 0.6, repeat: Infinity, ease: "easeInOut" }
+                                                    : { duration: 0.3 }
+                                            }
+                                            className="absolute inset-0 rounded-full"
+                                            style={{
+                                                boxShadow: `0 0 8px 2px ${bulbConfig.glow}, 0 0 20px 4px ${bulbConfig.glow}`,
+                                            }}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         );
                     })}
                 </div>
@@ -130,23 +133,23 @@ export function TrafficLightPod({
             <div
                 className="absolute z-0 pointer-events-none transition-glow"
                 style={{
-                    width: 140,
-                    height: 140,
+                    width: 120,
+                    height: 120,
                     borderRadius: "50%",
                     background: `radial-gradient(ellipse at center, ${config.ambient} 0%, transparent 60%)`,
-                    transform: `rotate(${beamRotation}deg) translateY(40px) scaleY(1.4)`,
+                    transform: `rotate(${beamRotation}deg) translateY(50px) scaleY(1.4)`,
                 }}
             />
 
-            {/* Hover card containing traffic info & pixel timer */}
-            {showCard && (
-                <TrafficLightCard
-                    phase={phase}
-                    secondsRemaining={secondsRemaining}
-                    direction={direction}
-                    visible={hovered}
-                />
-            )}
-        </div>
+            {/* Hover / Toggle Detail Card */}
+            <TrafficLightCard
+                phase={phase}
+                secondsRemaining={secondsRemaining}
+                totalPhaseDuration={totalPhaseDuration}
+                direction={direction}
+                visible={shouldShowCard}
+                isPreGreen={isPreGreen}
+            />
+        </motion.div>
     );
 }

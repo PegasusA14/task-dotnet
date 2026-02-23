@@ -1,10 +1,8 @@
 import { useTrafficLight, type TrafficPhase } from "@/hooks/useTrafficLight";
 import { TrafficLightPod } from "./TrafficLightPod";
 
-/* ── Direction Offsets (staggered start in the 19s cycle) ────── */
 const OFFSETS = { N: 0, E: 5, S: 10, W: 15 } as const;
 
-/* ── Road Surface CSS ─────────────────────────────────────────── */
 const roadBase: React.CSSProperties = {
     backgroundColor: "var(--road-surface)",
     position: "relative",
@@ -14,44 +12,31 @@ const roadBase: React.CSSProperties = {
 
 function roadGradient(dir: "vertical" | "horizontal"): React.CSSProperties {
     const isV = dir === "vertical";
-
-    // Create a double yellow line instead of a dashed white line
-    // Two 2px solid yellow lines separated by a 2px gap (total 6px width)
     return {
         ...roadBase,
         backgroundImage: [
-            // Asphalt texture — fine grain
             `repeating-linear-gradient(${isV ? "0deg" : "90deg"}, transparent 0px, rgba(0,0,0,0.015) 1px, transparent 2px)`,
-            // Left/Top yellow line
             `linear-gradient(${isV ? "90deg" : "180deg"}, transparent calc(50% - 3px), var(--lane-divider-yellow) calc(50% - 3px), var(--lane-divider-yellow) calc(50% - 1px), transparent calc(50% - 1px))`,
-            // Right/Bottom yellow line
             `linear-gradient(${isV ? "90deg" : "180deg"}, transparent calc(50% + 1px), var(--lane-divider-yellow) calc(50% + 1px), var(--lane-divider-yellow) calc(50% + 3px), transparent calc(50% + 3px))`
         ].join(", "),
     };
 }
 
-/* ── Edge lines overlay ───────────────────────────────────────── */
 function EdgeLines({ direction }: { direction: "vertical" | "horizontal" }) {
     const isV = direction === "vertical";
     return (
         <>
-            {/* Left / Top edge */}
             <div
                 className="absolute"
                 style={{
-                    ...(isV
-                        ? { left: 0, top: 0, bottom: 0, width: 2 }
-                        : { top: 0, left: 0, right: 0, height: 2 }),
+                    ...(isV ? { left: 0, top: 0, bottom: 0, width: 2 } : { top: 0, left: 0, right: 0, height: 2 }),
                     backgroundColor: "var(--road-edge)",
                 }}
             />
-            {/* Right / Bottom edge */}
             <div
                 className="absolute"
                 style={{
-                    ...(isV
-                        ? { right: 0, top: 0, bottom: 0, width: 2 }
-                        : { bottom: 0, left: 0, right: 0, height: 2 }),
+                    ...(isV ? { right: 0, top: 0, bottom: 0, width: 2 } : { bottom: 0, left: 0, right: 0, height: 2 }),
                     backgroundColor: "var(--road-edge)",
                 }}
             />
@@ -59,42 +44,16 @@ function EdgeLines({ direction }: { direction: "vertical" | "horizontal" }) {
     );
 }
 
-/* ── Crosswalk stripes ────────────────────────────────────────── */
-function Crosswalk({
-    position,
-}: {
-    position: "top" | "bottom" | "left" | "right";
-}) {
+function Crosswalk({ position }: { position: "top" | "bottom" | "left" | "right" }) {
     const isH = position === "left" || position === "right";
-    // Responsive sizing for the crosswalk to fit the road widths
     return (
         <div
-            className="absolute"
+            className="absolute z-10"
             style={{
-                ...(position === "top" && {
-                    bottom: 2,
-                    left: 4,
-                    right: 4,
-                    height: 24, // Thicker zebra lines
-                }),
-                ...(position === "bottom" && {
-                    top: 2,
-                    left: 4,
-                    right: 4,
-                    height: 24,
-                }),
-                ...(position === "left" && {
-                    right: 2,
-                    top: 4,
-                    bottom: 4,
-                    width: 24,
-                }),
-                ...(position === "right" && {
-                    left: 2,
-                    top: 4,
-                    bottom: 4,
-                    width: 24,
-                }),
+                ...(position === "top" && { bottom: 2, left: 4, right: 4, height: 24 }),
+                ...(position === "bottom" && { top: 2, left: 4, right: 4, height: 24 }),
+                ...(position === "left" && { right: 2, top: 4, bottom: 4, width: 24 }),
+                ...(position === "right" && { left: 2, top: 4, bottom: 4, width: 24 }),
                 backgroundImage: isH
                     ? `repeating-linear-gradient(0deg, var(--crosswalk) 0px, var(--crosswalk) 5px, transparent 5px, transparent 10px)`
                     : `repeating-linear-gradient(90deg, var(--crosswalk) 0px, var(--crosswalk) 5px, transparent 5px, transparent 10px)`,
@@ -104,240 +63,192 @@ function Crosswalk({
     );
 }
 
-/* ── Empty Corner Cell ────────────────────────────────────────── */
 function EmptyCell() {
     return (
         <div
-            className="transition-theme w-full h-full bg-[var(--background)] bg-grid-pattern"
+            className="transition-theme w-full h-full bg-stone-200 dark:bg-stone-900"
+            style={{
+                backgroundImage: "radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px), radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px)",
+                backgroundPosition: "0 0, 20px 20px",
+                backgroundSize: "40px 40px",
+            }}
         />
     );
 }
 
-/* ── Intersection Center ──────────────────────────────────────── */
-function IntersectionCenter() {
+function ArrowSVG({ pos, rot, animate }: { pos: string; rot: string; animate: boolean }) {
     return (
         <div
-            className="w-full h-full relative"
-            style={{ backgroundColor: "var(--intersection-surface)" }}
+            className={`absolute ${pos} ${rot} pointer-events-none z-10 ${animate ? "animate-pulse opacity-80" : "opacity-40"}`}
+            style={{
+                filter: animate ? "drop-shadow(0 2px 8px rgba(255,255,255,0.8))" : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+                transition: "opacity 0.3s ease, filter 0.3s ease"
+            }}
         >
-            {/*
-        Inner grid creating the 4 boxes divided by lane lines.
-        Using the background intersection-surface color.
-      */}
-            <div
-                className="absolute inset-0 grid grid-cols-2 grid-rows-2 transition-theme p-2"
-                style={{ gap: "2px", backgroundColor: "var(--road-edge)", padding: "8px" }}
-            >
-                <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
-                <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
-                <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
-                <div className="bg-[var(--intersection-surface)] w-full h-full transition-theme border border-[var(--road-edge)]/40 shadow-inner"></div>
-            </div>
-            {/* Ambient depth vignette */}
-            <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                    backgroundImage:
-                        "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.15) 100%)",
-                }}
-            />
+            <svg width="28" height="72" viewBox="0 0 24 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#ffffff" />
+            </svg>
         </div>
     );
 }
 
-/* ── Pod positioning per direction ─────────────────────────────── */
-// The traffic lights are moved directly onto the intersection boxes now
-const POD_POSITION: Record<
-    string,
-    { align: string; justify: string; style: React.CSSProperties }
-> = {
-    // We place the pod closer to the stop line
-    N: {
-        align: "items-end",
-        justify: "justify-center",
-        style: { paddingBottom: 10 },
-    },
-    S: {
-        align: "items-start",
-        justify: "justify-center",
-        style: { paddingTop: 10 },
-    },
-    E: {
-        align: "items-center",
-        justify: "justify-start",
-        style: { paddingLeft: 10 },
-    },
-    W: {
-        align: "items-center",
-        justify: "justify-end",
-        style: { paddingRight: 10 },
-    },
-};
-
-/* ── Pavement Lane Arrow ──────────────────────────────────────── */
-function LaneArrow({
-    direction,
-    phase,
-}: {
-    direction: "N" | "S" | "E" | "W";
-    phase: TrafficPhase;
-}) {
+function LaneArrows({ direction, phase }: { direction: "N" | "S" | "E" | "W"; phase: TrafficPhase }) {
     let incomingPos = "";
     let incomingRot = "";
     let outgoingPos = "";
     let outgoingRot = "";
 
-    // Right-hand traffic logic
     switch (direction) {
-        case "N": // Top road. Incoming traffic drives South (right/West lane). Outgoing drives North (left/East lane).
-            incomingPos = "bottom-16 left-1/4 -translate-x-1/2";
+        case "N":
+            incomingPos = "bottom-16 right-1/4 translate-x-1/2";
             incomingRot = "rotate-180";
-            outgoingPos = "bottom-16 right-1/4 translate-x-1/2";
+            outgoingPos = "bottom-16 left-1/4 -translate-x-1/2";
             outgoingRot = "rotate-0";
             break;
-        case "S": // Bottom road. Incoming traffic drives North (right/East lane). Outgoing drives South (left/West lane).
-            incomingPos = "top-16 right-1/4 translate-x-1/2";
+        case "S":
+            incomingPos = "top-16 left-1/4 -translate-x-1/2";
             incomingRot = "rotate-0";
-            outgoingPos = "top-16 left-1/4 -translate-x-1/2";
+            outgoingPos = "top-16 right-1/4 translate-x-1/2";
             outgoingRot = "rotate-180";
             break;
-        case "E": // Right road. Incoming traffic drives West (top/North lane). Outgoing drives East (bottom/South lane).
-            incomingPos = "left-16 top-1/4 -translate-y-1/2";
+        case "E":
+            incomingPos = "left-16 bottom-1/4 translate-y-1/2";
             incomingRot = "-rotate-90";
-            outgoingPos = "left-16 bottom-1/4 translate-y-1/2";
+            outgoingPos = "left-16 top-1/4 -translate-y-1/2";
             outgoingRot = "rotate-90";
             break;
-        case "W": // Left road. Incoming traffic drives East (bottom/South lane). Outgoing drives West (top/North lane).
-            incomingPos = "right-16 bottom-1/4 translate-y-1/2";
+        case "W":
+            incomingPos = "right-16 top-1/4 -translate-y-1/2";
             incomingRot = "rotate-90";
-            outgoingPos = "right-16 top-1/4 -translate-y-1/2";
+            outgoingPos = "right-16 bottom-1/4 translate-y-1/2";
             outgoingRot = "-rotate-90";
             break;
     }
 
     const isGreen = phase === "green";
-
-    const ArrowSVG = ({ pos, rot, animate }: { pos: string; rot: string; animate: boolean }) => (
-        <div
-            className={`absolute ${pos} ${rot} pointer-events-none z-10 
-                       ${animate ? "animate-pulse opacity-80" : "opacity-40"}`}
-            style={{
-                filter: animate
-                    ? "drop-shadow(0 2px 8px rgba(255,255,255,0.8))"
-                    : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
-                transition: "opacity 0.3s ease, filter 0.3s ease"
-            }}
-        >
-            <svg
-                width="28"
-                height="72"
-                viewBox="0 0 24 64"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                {/* A stretched, authentic pavement arrow */}
-                <path d="M12 2L2 22H8V62H16V22H22L12 2Z" fill="#ffffff" />
-            </svg>
-        </div>
-    );
-
     return (
         <>
-            {/* Outgoing lane gets the green pulse animation since it's the one moving */}
             <ArrowSVG pos={incomingPos} rot={incomingRot} animate={false} />
             <ArrowSVG pos={outgoingPos} rot={outgoingRot} animate={isGreen} />
         </>
     );
 }
 
-/* ── Road Cell with Pod ───────────────────────────────────────── */
-function RoadCell({
-    direction,
-}: {
-    direction: "N" | "S" | "E" | "W";
-}) {
-    const { phase, secondsRemaining } = useTrafficLight(
-        OFFSETS[direction]
-    );
-    const isVertical = direction === "N" || direction === "S";
-    const pos = POD_POSITION[direction];
-
-    // Subtle ambient gradient for depth
-    const ambientGradient = (() => {
-        switch (direction) {
-            case "N":
-                return "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
-            case "S":
-                return "linear-gradient(0deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
-            case "E":
-                return "linear-gradient(270deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
-            case "W":
-                return "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
-        }
-    })();
+function IntersectionCenter() {
+    const wPhase = useTrafficLight(OFFSETS["W"]);
+    const nPhase = useTrafficLight(OFFSETS["N"]);
+    const ePhase = useTrafficLight(OFFSETS["E"]);
+    const sPhase = useTrafficLight(OFFSETS["S"]);
 
     return (
         <div
-            className={`relative flex ${pos.align} ${pos.justify} transition-theme`}
-            style={{
-                ...roadGradient(isVertical ? "vertical" : "horizontal"),
-            }}
+            className="w-full h-full relative transition-theme z-20 flex items-center justify-center overflow-visible"
+            style={{ backgroundColor: "var(--road-surface-dark)" }}
         >
-            <EdgeLines direction={isVertical ? "vertical" : "horizontal"} />
-            <Crosswalk
-                position={
-                    direction === "N"
-                        ? "bottom"
-                        : direction === "S"
-                            ? "top"
-                            : direction === "E"
-                                ? "left"
-                                : "right"
-                }
-            />
-            {/* Ambient depth gradient */}
+            {/* Ambient depth vignette */}
             <div
-                className="absolute inset-0 pointer-events-none"
-                style={{ backgroundImage: ambientGradient }}
+                className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-20"
+                style={{ backgroundImage: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.9) 100%)" }}
             />
 
-            <LaneArrow direction={direction} phase={phase} />
+            {/* Center Pole — no radial glow */}
+            <div className="absolute w-8 h-8 rounded-full bg-stone-400 dark:bg-stone-600 shadow-lg border-2 border-stone-500 dark:border-stone-500 z-50 flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-white/60" />
+            </div>
 
-            {/* Traffic light pod at the edge of the stopline */}
-            <div style={pos.style} className="z-20 relative">
+            {/* North Pod — pushed further up to avoid overlap */}
+            <div className="absolute" style={{ transform: "translateY(-85px)" }}>
                 <TrafficLightPod
-                    direction={direction}
-                    phase={phase}
-                    secondsRemaining={secondsRemaining}
+                    direction="N"
+                    phase={nPhase.phase}
+                    secondsRemaining={nPhase.secondsRemaining}
+                    totalPhaseDuration={nPhase.totalPhaseDuration}
+                    isPreGreen={nPhase.isPreGreen}
+                />
+            </div>
+
+            {/* South Pod — pushed further down */}
+            <div className="absolute" style={{ transform: "translateY(85px)" }}>
+                <TrafficLightPod
+                    direction="S"
+                    phase={sPhase.phase}
+                    secondsRemaining={sPhase.secondsRemaining}
+                    totalPhaseDuration={sPhase.totalPhaseDuration}
+                    isPreGreen={sPhase.isPreGreen}
+                />
+            </div>
+
+            {/* East Pod — pushed further right */}
+            <div className="absolute" style={{ transform: "translateX(95px)" }}>
+                <TrafficLightPod
+                    direction="E"
+                    phase={ePhase.phase}
+                    secondsRemaining={ePhase.secondsRemaining}
+                    totalPhaseDuration={ePhase.totalPhaseDuration}
+                    isPreGreen={ePhase.isPreGreen}
+                    orientation="horizontal"
+                />
+            </div>
+
+            {/* West Pod — pushed further left */}
+            <div className="absolute" style={{ transform: "translateX(-95px)" }}>
+                <TrafficLightPod
+                    direction="W"
+                    phase={wPhase.phase}
+                    secondsRemaining={wPhase.secondsRemaining}
+                    totalPhaseDuration={wPhase.totalPhaseDuration}
+                    isPreGreen={wPhase.isPreGreen}
+                    orientation="horizontal"
                 />
             </div>
         </div>
     );
 }
 
-/* ── Main Grid ────────────────────────────────────────────────── */
+function RoadCell({ direction }: { direction: "N" | "S" | "E" | "W" }) {
+    const { phase } = useTrafficLight(OFFSETS[direction]);
+    const isVertical = direction === "N" || direction === "S";
+
+    const ambientGradient = (() => {
+        switch (direction) {
+            case "N": return "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
+            case "S": return "linear-gradient(0deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
+            case "E": return "linear-gradient(270deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
+            case "W": return "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 60%)";
+        }
+    })();
+
+    return (
+        <div
+            className="relative flex items-center justify-center transition-theme"
+            style={{ ...roadGradient(isVertical ? "vertical" : "horizontal") }}
+        >
+            <EdgeLines direction={isVertical ? "vertical" : "horizontal"} />
+            <Crosswalk
+                position={direction === "N" ? "bottom" : direction === "S" ? "top" : direction === "E" ? "left" : "right"}
+            />
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: ambientGradient }} />
+            <LaneArrows direction={direction} phase={phase} />
+        </div>
+    );
+}
+
 export function IntersectionGrid() {
     return (
         <div
             className="w-full h-full bg-[var(--background)] transition-theme"
             style={{
                 display: "grid",
-                // Expand the center massively: minimum 360px up to 45vw
                 gridTemplateColumns: "1fr min(45vw, 360px) 1fr",
                 gridTemplateRows: "1fr min(45vw, 360px) 1fr",
             }}
         >
-            {/* Row 1: Empty | North Road | Empty */}
             <EmptyCell />
             <RoadCell direction="N" />
             <EmptyCell />
-
-            {/* Row 2: West Road | Intersection | East Road */}
             <RoadCell direction="W" />
             <IntersectionCenter />
             <RoadCell direction="E" />
-
-            {/* Row 3: Empty | South Road | Empty */}
             <EmptyCell />
             <RoadCell direction="S" />
             <EmptyCell />

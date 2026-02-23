@@ -7,5 +7,6 @@ public record IntersectionSnapshot(
     IReadOnlyList<DirectionalLightState> Lights,
     int SecondsRemaining,
     int TotalPhaseDuration,
+    bool IsPreGreen,
     string GeneratedAt
 );

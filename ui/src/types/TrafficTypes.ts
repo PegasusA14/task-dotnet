@@ -1,6 +1,6 @@
 export type LightState = "Red" | "Yellow" | "Green";
 
-export type IntersectionPhase = "NS_Green" | "NS_Yellow" | "EW_Green" | "EW_Yellow";
+export type IntersectionPhase = "NS_Green" | "EW_PreGreen" | "EW_Green" | "NS_PreGreen";
 
 export interface DirectionalLightState {
     direction: string;
@@ -12,5 +12,6 @@ export interface IntersectionSnapshot {
     lights: DirectionalLightState[];
     secondsRemaining: number;
     totalPhaseDuration: number;
+    isPreGreen: boolean;
     generatedAt: string;
 }
