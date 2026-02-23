@@ -1,6 +1,5 @@
 import { useContext } from "react";
-import type { DirectionalLightState } from "../types/TrafficTypes";
-import { TrafficContext } from "./useIntersection";
+import { TrafficContext, type SignalData } from "./useIntersection";
 
 export type TrafficPhase = "red" | "green" | "yellow";
 
@@ -9,59 +8,43 @@ export interface TrafficLightState {
     secondsRemaining: number;
     totalPhaseDuration: number;
     isPreGreen: boolean;
+    waitingTimeSeconds: number;
+    signalId: string;
+    laneName: string;
 }
 
-export function useTrafficLight(
-    offsetSeconds: number,
-    directionSnapshot?: DirectionalLightState,
-    serverSecondsRemaining?: number,
-    serverTotalPhaseDuration?: number,
-    serverIsPreGreen?: boolean
-): TrafficLightState {
+const DIR_MAP = {
+    N: "north",
+    E: "east",
+    S: "south",
+    W: "west",
+} as const;
+
+export function useTrafficLight(direction: "N" | "E" | "S" | "W"): TrafficLightState {
     const context = useContext(TrafficContext);
 
-    let activeDirectionSnapshot = directionSnapshot;
-    let activeSeconds = serverSecondsRemaining;
-    let activeTotal = serverTotalPhaseDuration;
-    let activeIsPreGreen = serverIsPreGreen;
+    const key = DIR_MAP[direction];
+    const signal: SignalData | undefined = context ? context[key] : undefined;
 
-    if (context && !directionSnapshot) {
-        let dir: "north" | "south" | "east" | "west" | null = null;
-        if (offsetSeconds === 0) dir = "north";
-        else if (offsetSeconds === 5) dir = "east";
-        else if (offsetSeconds === 10) dir = "south";
-        else if (offsetSeconds === 15) dir = "west";
-
-        if (dir && context[dir]) {
-            activeDirectionSnapshot = {
-                direction: dir,
-                state: context[dir]!.state
-            };
-            activeSeconds = context[dir]!.secondsRemaining;
-            activeTotal = context[dir]!.totalPhaseDuration;
-            activeIsPreGreen = context[dir]!.isPreGreen;
-        }
-    }
-
-    if (
-        activeDirectionSnapshot !== undefined &&
-        activeSeconds !== undefined &&
-        activeTotal !== undefined &&
-        activeIsPreGreen !== undefined
-    ) {
+    if (signal) {
         return {
-            phase: activeDirectionSnapshot.state.toLowerCase() as TrafficPhase,
-            secondsRemaining: activeSeconds,
-            totalPhaseDuration: activeTotal,
-            isPreGreen: activeIsPreGreen,
+            phase: signal.lightState.toLowerCase() as TrafficPhase,
+            secondsRemaining: signal.phaseSecondsRemaining,
+            totalPhaseDuration: context!.totalPhaseDuration,
+            isPreGreen: signal.isPreGreen,
+            waitingTimeSeconds: signal.waitingTimeSeconds,
+            signalId: signal.id,
+            laneName: signal.laneName,
         };
     }
 
-    // When the server is offline or disconnected, return a blank offline state
     return {
         phase: "red",
         secondsRemaining: 0,
         totalPhaseDuration: 0,
         isPreGreen: false,
+        waitingTimeSeconds: 0,
+        signalId: "",
+        laneName: "",
     };
 }

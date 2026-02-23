@@ -10,6 +10,9 @@ interface TrafficLightPodProps {
     secondsRemaining: number;
     totalPhaseDuration: number;
     isPreGreen: boolean;
+    waitingTimeSeconds: number;
+    signalId: string;
+    laneName: string;
     orientation?: "vertical" | "horizontal";
 }
 
@@ -42,6 +45,9 @@ export function TrafficLightPod({
     secondsRemaining,
     totalPhaseDuration,
     isPreGreen,
+    waitingTimeSeconds,
+    signalId,
+    laneName,
     orientation = "vertical",
 }: TrafficLightPodProps) {
     const [isHovered, setIsHovered] = useState(false);
@@ -57,7 +63,6 @@ export function TrafficLightPod({
         W: 90,
     }[direction];
 
-    // If highlightActive is on and this pod is NOT green, dim it
     const isDimmed = highlightActive && phase !== "green";
     const shouldShowCard = showAllCards || isHovered;
 
@@ -69,7 +74,6 @@ export function TrafficLightPod({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* White Wrapped Container */}
             <div className="p-1.5 rounded-2xl bg-white dark:bg-stone-800 shadow-xl border border-stone-300 dark:border-stone-700 z-10">
                 <div
                     className={`relative flex gap-[6px] ${isH ? "flex-row py-2 px-3" : "flex-col p-2 px-3"} rounded-[10px] z-10`}
@@ -129,7 +133,7 @@ export function TrafficLightPod({
                 </div>
             </div>
 
-            {/* Glowing beam projected onto road surface */}
+            {/* Glowing beam */}
             <div
                 className="absolute z-0 pointer-events-none transition-glow"
                 style={{
@@ -149,6 +153,9 @@ export function TrafficLightPod({
                 direction={direction}
                 visible={shouldShowCard}
                 isPreGreen={isPreGreen}
+                waitingTimeSeconds={waitingTimeSeconds}
+                signalId={signalId}
+                laneName={laneName}
             />
         </motion.div>
     );

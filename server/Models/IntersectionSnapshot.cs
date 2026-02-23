@@ -1,12 +1,10 @@
-using System.Collections.Generic;
-
 namespace TrafficSimulation.Api.Models;
 
 public record IntersectionSnapshot(
-    IntersectionPhase Phase,
-    IReadOnlyList<DirectionalLightState> Lights,
-    int SecondsRemaining,
+    IntersectionPhase CurrentPhase,
+    int PhaseSecondsRemaining,
     int TotalPhaseDuration,
-    bool IsPreGreen,
-    string GeneratedAt
+    int CyclePositionSeconds,
+    string GeneratedAt,
+    IReadOnlyList<SignalState> Signals
 );

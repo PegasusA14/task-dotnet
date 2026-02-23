@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import type { TrafficPhase } from "@/hooks/useTrafficLight";
 import type { IntersectionPhase } from "@/types/TrafficTypes";
-import { useIntersection } from "@/hooks/useIntersection";
+import { TrafficContext } from "@/hooks/useIntersection";
 
 interface TrafficLightCardProps {
     phase: TrafficPhase;
@@ -10,20 +10,20 @@ interface TrafficLightCardProps {
     direction: "N" | "S" | "E" | "W";
     visible: boolean;
     isPreGreen: boolean;
+    waitingTimeSeconds: number;
+    signalId: string;
+    laneName: string;
 }
 
 const HumanPhaseNames: Record<IntersectionPhase, string> = {
-    NS_Green: "North-South Flowing",
-    EW_PreGreen: "East-West Preparing",
-    EW_Green: "East-West Flowing",
-    NS_PreGreen: "North-South Preparing",
-};
-
-const DIRECTION_NAMES: Record<string, string> = {
-    N: "North",
-    S: "South",
-    E: "East",
-    W: "West",
+    L1_PreGreen: "L1 Preparing (West→East)",
+    L1_Green: "L1 Flowing (West→East)",
+    L2_PreGreen: "L2 Preparing (North→South)",
+    L2_Green: "L2 Flowing (North→South)",
+    L3_PreGreen: "L3 Preparing (East→West)",
+    L3_Green: "L3 Flowing (East→West)",
+    L4_PreGreen: "L4 Preparing (South→North)",
+    L4_Green: "L4 Flowing (South→North)",
 };
 
 const PHASE_COLORS: Record<TrafficPhase, string> = {
@@ -39,11 +39,13 @@ export function TrafficLightCard({
     direction,
     visible,
     isPreGreen,
+    waitingTimeSeconds,
+    signalId,
+    laneName,
 }: TrafficLightCardProps) {
-    const context = useIntersection();
-    const serverPhase = context?.phase || "NS_Green";
+    const context = useContext(TrafficContext);
+    const serverPhase = context?.phase || "L1_PreGreen";
 
-    // Position cards into their respective LANES (not overlapping center)
     const positionClass = useMemo(() => {
         switch (direction) {
             case "N": return "bottom-full left-1/2 -translate-x-1/2 mb-3";
@@ -54,21 +56,6 @@ export function TrafficLightCard({
         }
     }, [direction]);
 
-    // Calculate time until green
-    let timeUntilGreen = 0;
-    if (phase === "red") {
-        timeUntilGreen = secondsRemaining;
-        if ((direction === "N" || direction === "S") && serverPhase === "EW_Green") {
-            timeUntilGreen += 3;
-        } else if ((direction === "N" || direction === "S") && serverPhase === "EW_PreGreen") {
-            timeUntilGreen += 45 + 3;
-        } else if ((direction === "E" || direction === "W") && serverPhase === "NS_Green") {
-            timeUntilGreen += 3;
-        } else if ((direction === "E" || direction === "W") && serverPhase === "NS_PreGreen") {
-            timeUntilGreen += 45 + 3;
-        }
-    }
-
     const phaseColor = PHASE_COLORS[phase];
     let statusLabel = "";
     if (phase === "red") statusLabel = "STOP";
@@ -78,21 +65,28 @@ export function TrafficLightCard({
     // Progress for timer arc
     const radius = 18;
     const circumference = 2 * Math.PI * radius;
-    const progress = totalPhaseDuration > 0 ? secondsRemaining / totalPhaseDuration : 0;
+    const displaySeconds = phase === "red" ? waitingTimeSeconds : secondsRemaining;
+    const displayTotal = phase === "red" ? Math.max(waitingTimeSeconds, 1) : totalPhaseDuration;
+    const progress = displayTotal > 0 ? displaySeconds / displayTotal : 0;
     const strokeDashoffset = circumference * (1 - progress);
 
     return (
         <div
             className={`absolute ${positionClass} z-50 pointer-events-none transition-all duration-300
                   ${visible ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"}`}
-            style={{ width: "180px" }}
+            style={{ width: "200px" }}
         >
             <div className="flex flex-col gap-3 p-4 rounded-xl border border-[var(--border)] bg-white dark:bg-stone-900 shadow-2xl text-left">
-                {/* Direction + Phase */}
+                {/* Signal ID + Lane + Status */}
                 <div className="flex items-center justify-between">
-                    <span className="text-[10px] tracking-[0.2em] uppercase opacity-60 font-semibold">
-                        {DIRECTION_NAMES[direction]}
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="text-[11px] font-bold tracking-wide text-foreground">
+                            {signalId}
+                        </span>
+                        <span className="text-[9px] tracking-[0.1em] uppercase opacity-50">
+                            {laneName}
+                        </span>
+                    </div>
                     <span
                         className="text-[10px] tracking-[0.15em] uppercase font-bold px-2 py-0.5 rounded-full"
                         style={{
@@ -104,7 +98,7 @@ export function TrafficLightCard({
                     </span>
                 </div>
 
-                {/* Timer Circle + Countdown */}
+                {/* Timer Circle + Phase Info */}
                 <div className="flex items-center gap-3">
                     <div className="relative flex items-center justify-center shrink-0" style={{ width: 48, height: 48 }}>
                         <svg width="48" height="48" className="absolute -rotate-90">
@@ -118,7 +112,7 @@ export function TrafficLightCard({
                             />
                         </svg>
                         <span className="font-mono font-bold text-lg z-10" style={{ color: phaseColor }}>
-                            {String(secondsRemaining).padStart(2, "0")}
+                            {String(displaySeconds).padStart(2, "0")}
                         </span>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -135,14 +129,14 @@ export function TrafficLightCard({
                     </div>
                 </div>
 
-                {/* Time until green */}
-                {phase === "red" && (
+                {/* Waiting time from server */}
+                {phase === "red" && waitingTimeSeconds > 0 && (
                     <>
                         <div className="w-full h-px bg-[var(--border)]" />
                         <div className="flex justify-between items-center text-xs">
                             <span className="opacity-60">Green in</span>
                             <span className="font-mono font-bold" style={{ color: "var(--light-green)" }}>
-                                {timeUntilGreen}s
+                                {waitingTimeSeconds}s
                             </span>
                         </div>
                     </>

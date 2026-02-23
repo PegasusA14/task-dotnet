@@ -1,8 +1,6 @@
 import { useTrafficLight, type TrafficPhase } from "@/hooks/useTrafficLight";
 import { TrafficLightPod } from "./TrafficLightPod";
 
-const OFFSETS = { N: 0, E: 5, S: 10, W: 15 } as const;
-
 const roadBase: React.CSSProperties = {
     backgroundColor: "var(--road-surface)",
     position: "relative",
@@ -135,28 +133,27 @@ function LaneArrows({ direction, phase }: { direction: "N" | "S" | "E" | "W"; ph
 }
 
 function IntersectionCenter() {
-    const wPhase = useTrafficLight(OFFSETS["W"]);
-    const nPhase = useTrafficLight(OFFSETS["N"]);
-    const ePhase = useTrafficLight(OFFSETS["E"]);
-    const sPhase = useTrafficLight(OFFSETS["S"]);
+    const nPhase = useTrafficLight("N");
+    const ePhase = useTrafficLight("E");
+    const sPhase = useTrafficLight("S");
+    const wPhase = useTrafficLight("W");
 
     return (
         <div
             className="w-full h-full relative transition-theme z-20 flex items-center justify-center overflow-visible"
             style={{ backgroundColor: "var(--road-surface-dark)" }}
         >
-            {/* Ambient depth vignette */}
             <div
                 className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-20"
                 style={{ backgroundImage: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.9) 100%)" }}
             />
 
-            {/* Center Pole — no radial glow */}
+            {/* Center Pole */}
             <div className="absolute w-8 h-8 rounded-full bg-stone-400 dark:bg-stone-600 shadow-lg border-2 border-stone-500 dark:border-stone-500 z-50 flex items-center justify-center">
                 <div className="w-2.5 h-2.5 rounded-full bg-white/60" />
             </div>
 
-            {/* North Pod — pushed further up to avoid overlap */}
+            {/* North Pod (L1) */}
             <div className="absolute" style={{ transform: "translateY(-85px)" }}>
                 <TrafficLightPod
                     direction="N"
@@ -164,10 +161,13 @@ function IntersectionCenter() {
                     secondsRemaining={nPhase.secondsRemaining}
                     totalPhaseDuration={nPhase.totalPhaseDuration}
                     isPreGreen={nPhase.isPreGreen}
+                    waitingTimeSeconds={nPhase.waitingTimeSeconds}
+                    signalId={nPhase.signalId}
+                    laneName={nPhase.laneName}
                 />
             </div>
 
-            {/* South Pod — pushed further down */}
+            {/* South Pod (L3) */}
             <div className="absolute" style={{ transform: "translateY(85px)" }}>
                 <TrafficLightPod
                     direction="S"
@@ -175,10 +175,13 @@ function IntersectionCenter() {
                     secondsRemaining={sPhase.secondsRemaining}
                     totalPhaseDuration={sPhase.totalPhaseDuration}
                     isPreGreen={sPhase.isPreGreen}
+                    waitingTimeSeconds={sPhase.waitingTimeSeconds}
+                    signalId={sPhase.signalId}
+                    laneName={sPhase.laneName}
                 />
             </div>
 
-            {/* East Pod — pushed further right */}
+            {/* East Pod (L2) */}
             <div className="absolute" style={{ transform: "translateX(95px)" }}>
                 <TrafficLightPod
                     direction="E"
@@ -186,11 +189,14 @@ function IntersectionCenter() {
                     secondsRemaining={ePhase.secondsRemaining}
                     totalPhaseDuration={ePhase.totalPhaseDuration}
                     isPreGreen={ePhase.isPreGreen}
+                    waitingTimeSeconds={ePhase.waitingTimeSeconds}
+                    signalId={ePhase.signalId}
+                    laneName={ePhase.laneName}
                     orientation="horizontal"
                 />
             </div>
 
-            {/* West Pod — pushed further left */}
+            {/* West Pod (L4) */}
             <div className="absolute" style={{ transform: "translateX(-95px)" }}>
                 <TrafficLightPod
                     direction="W"
@@ -198,6 +204,9 @@ function IntersectionCenter() {
                     secondsRemaining={wPhase.secondsRemaining}
                     totalPhaseDuration={wPhase.totalPhaseDuration}
                     isPreGreen={wPhase.isPreGreen}
+                    waitingTimeSeconds={wPhase.waitingTimeSeconds}
+                    signalId={wPhase.signalId}
+                    laneName={wPhase.laneName}
                     orientation="horizontal"
                 />
             </div>
@@ -206,7 +215,7 @@ function IntersectionCenter() {
 }
 
 function RoadCell({ direction }: { direction: "N" | "S" | "E" | "W" }) {
-    const { phase } = useTrafficLight(OFFSETS[direction]);
+    const { phase } = useTrafficLight(direction);
     const isVertical = direction === "N" || direction === "S";
 
     const ambientGradient = (() => {
