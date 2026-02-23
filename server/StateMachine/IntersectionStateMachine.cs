@@ -17,27 +17,24 @@ public class IntersectionStateMachine : IIntersectionStateMachine
         }
     }
 
+    // Only 4 phases — yellow overlaps with the tail of the previous green
     private static readonly PhaseEntry[] Phases =
     [
-        new(IntersectionPhase.L1_PreGreen, SignalTimingConfig.PreGreenYellowDuration),
-        new(IntersectionPhase.L1_Green,    SignalTimingConfig.GreenDuration),
-        new(IntersectionPhase.L2_PreGreen, SignalTimingConfig.PreGreenYellowDuration),
-        new(IntersectionPhase.L2_Green,    SignalTimingConfig.GreenDuration),
-        new(IntersectionPhase.L3_PreGreen, SignalTimingConfig.PreGreenYellowDuration),
-        new(IntersectionPhase.L3_Green,    SignalTimingConfig.GreenDuration),
-        new(IntersectionPhase.L4_PreGreen, SignalTimingConfig.PreGreenYellowDuration),
-        new(IntersectionPhase.L4_Green,    SignalTimingConfig.GreenDuration),
+        new(IntersectionPhase.L1_Green, SignalTimingConfig.GreenDuration),
+        new(IntersectionPhase.L2_Green, SignalTimingConfig.GreenDuration),
+        new(IntersectionPhase.L3_Green, SignalTimingConfig.GreenDuration),
+        new(IntersectionPhase.L4_Green, SignalTimingConfig.GreenDuration),
     ];
 
     private static readonly int PhaseCount = Phases.Length;
 
-    // Signal metadata: [signalIndex] => (Id, LaneName, Position, PreGreenPhaseIndex, GreenPhaseIndex)
-    private static readonly (string Id, string LaneName, string Position, int PreGreenIdx, int GreenIdx)[] SignalMeta =
+    // Signal metadata: [signalIndex] => (Id, LaneName, Position, GreenPhaseIndex)
+    private static readonly (string Id, string LaneName, string Position, int GreenIdx)[] SignalMeta =
     [
-        ("L1", "West→East",   "North", 0, 1),
-        ("L2", "North→South", "East",  2, 3),
-        ("L3", "East→West",   "South", 4, 5),
-        ("L4", "South→North", "West",  6, 7),
+        ("L1", "West\u2192East",   "North", 0),
+        ("L2", "North\u2192South", "East",  1),
+        ("L3", "East\u2192West",   "South", 2),
+        ("L4", "South\u2192North", "West",  3),
     ];
 
     private int _currentPhaseIndex;
@@ -47,8 +44,8 @@ public class IntersectionStateMachine : IIntersectionStateMachine
 
     public IntersectionStateMachine()
     {
-        _currentPhaseIndex = 0; // L1_PreGreen
-        _secondsRemaining = Phases[0].Duration; // 3
+        _currentPhaseIndex = 0; // L1_Green
+        _secondsRemaining = SignalTimingConfig.GreenDuration; // 45
         _cycleElapsedSeconds = 0;
     }
 
@@ -88,15 +85,43 @@ public class IntersectionStateMachine : IIntersectionStateMachine
         var totalDuration = Phases[_currentPhaseIndex].Duration;
         var signals = new SignalState[SignalMeta.Length];
 
+        // Whether we are in the overlap window (last N seconds of current green)
+        bool inOverlapWindow = _secondsRemaining <= SignalTimingConfig.PreGreenYellowDuration;
+
+        // The index of the NEXT signal that will go green
+        int nextGreenIdx = (_currentPhaseIndex + 1) % PhaseCount;
+
         for (int i = 0; i < SignalMeta.Length; i++)
         {
             var meta = SignalMeta[i];
+            bool isPreGreen = false;
+            LightState lightState;
+            int phaseSeconds;
 
-            var lightState = DeriveLightState(_currentPhaseIndex, meta.PreGreenIdx, meta.GreenIdx);
-            var isPreGreen = _currentPhaseIndex == meta.PreGreenIdx;
-            var isActive = _currentPhaseIndex == meta.PreGreenIdx || _currentPhaseIndex == meta.GreenIdx;
-            var waitingTime = isActive ? 0 : ComputeWaitingTime(meta.PreGreenIdx);
-            var phaseSeconds = isActive ? _secondsRemaining : 0;
+            if (meta.GreenIdx == _currentPhaseIndex)
+            {
+                // This signal IS the current green signal
+                lightState = LightState.Green;
+                phaseSeconds = _secondsRemaining;
+            }
+            else if (inOverlapWindow && meta.GreenIdx == nextGreenIdx)
+            {
+                // This signal is NEXT and we're in the overlap window:
+                // it turns yellow (pre-green) while current green finishes
+                lightState = LightState.Yellow;
+                isPreGreen = true;
+                phaseSeconds = _secondsRemaining; // seconds until this signal goes green
+            }
+            else
+            {
+                // All other signals are red
+                lightState = LightState.Red;
+                phaseSeconds = 0;
+            }
+
+            // Compute waiting time
+            bool isActive = meta.GreenIdx == _currentPhaseIndex || (inOverlapWindow && meta.GreenIdx == nextGreenIdx);
+            int waitingTime = isActive ? 0 : ComputeWaitingTime(meta.GreenIdx);
 
             signals[i] = new SignalState(
                 meta.Id,
@@ -119,21 +144,14 @@ public class IntersectionStateMachine : IIntersectionStateMachine
         );
     }
 
-    private static LightState DeriveLightState(int currentIdx, int preGreenIdx, int greenIdx)
-    {
-        if (currentIdx == preGreenIdx) return LightState.Yellow;
-        if (currentIdx == greenIdx) return LightState.Green;
-        return LightState.Red;
-    }
-
-    private int ComputeWaitingTime(int targetPreGreenIdx)
+    private int ComputeWaitingTime(int targetGreenIdx)
     {
         // Sum: secondsRemaining in current phase + full durations of all phases
-        // between (current+1) and (targetPreGreenIdx - 1), wrapping circularly.
+        // between (current+1) and (targetGreenIdx - 1), wrapping circularly
         int total = _secondsRemaining;
 
         int idx = (_currentPhaseIndex + 1) % PhaseCount;
-        while (idx != targetPreGreenIdx)
+        while (idx != targetGreenIdx)
         {
             total += Phases[idx].Duration;
             idx = (idx + 1) % PhaseCount;

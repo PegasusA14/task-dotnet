@@ -1,10 +1,10 @@
 export type LightState = "Red" | "Yellow" | "Green";
 
 export type IntersectionPhase =
-    | "L1_PreGreen" | "L1_Green"
-    | "L2_PreGreen" | "L2_Green"
-    | "L3_PreGreen" | "L3_Green"
-    | "L4_PreGreen" | "L4_Green";
+    | "L1_Green"
+    | "L2_Green"
+    | "L3_Green"
+    | "L4_Green";
 
 export interface SignalState {
     id: string;

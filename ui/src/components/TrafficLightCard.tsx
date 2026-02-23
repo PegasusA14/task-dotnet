@@ -16,13 +16,9 @@ interface TrafficLightCardProps {
 }
 
 const HumanPhaseNames: Record<IntersectionPhase, string> = {
-    L1_PreGreen: "L1 Preparing (West→East)",
     L1_Green: "L1 Flowing (West→East)",
-    L2_PreGreen: "L2 Preparing (North→South)",
     L2_Green: "L2 Flowing (North→South)",
-    L3_PreGreen: "L3 Preparing (East→West)",
     L3_Green: "L3 Flowing (East→West)",
-    L4_PreGreen: "L4 Preparing (South→North)",
     L4_Green: "L4 Flowing (South→North)",
 };
 
@@ -44,7 +40,7 @@ export function TrafficLightCard({
     laneName,
 }: TrafficLightCardProps) {
     const context = useContext(TrafficContext);
-    const serverPhase = context?.phase || "L1_PreGreen";
+    const serverPhase = context?.phase || "L1_Green";
 
     const positionClass = useMemo(() => {
         switch (direction) {
