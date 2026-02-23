@@ -101,7 +101,15 @@ public class IntersectionStateMachine : IIntersectionStateMachine
             if (meta.GreenIdx == _currentPhaseIndex)
             {
                 // This signal IS the current green signal
-                lightState = LightState.Green;
+                // Post-green yellow: show yellow in the last N seconds before turning red
+                if (_secondsRemaining <= SignalTimingConfig.PostGreenYellowDuration)
+                {
+                    lightState = LightState.Yellow;
+                }
+                else
+                {
+                    lightState = LightState.Green;
+                }
                 phaseSeconds = _secondsRemaining;
             }
             else if (inOverlapWindow && meta.GreenIdx == nextGreenIdx)

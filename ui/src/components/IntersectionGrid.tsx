@@ -66,11 +66,9 @@ function Crosswalk({ position }: { position: "top" | "bottom" | "left" | "right"
 function EmptyCell() {
     return (
         <div
-            className="transition-theme w-full h-full bg-stone-200 dark:bg-stone-900"
+            className="transition-theme w-full h-full"
             style={{
-                backgroundImage: "radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px), radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px)",
-                backgroundPosition: "0 0, 20px 20px",
-                backgroundSize: "40px 40px",
+                backgroundColor: "#f0f3feff",
             }}
         />
     );
